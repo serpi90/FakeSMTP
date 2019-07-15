@@ -1,17 +1,11 @@
-FROM alpine as download
-
-WORKDIR /tmp
-
-ADD http://nilhcem.github.com/FakeSMTP/downloads/fakeSMTP-latest.zip .
-RUN set -eu; \
-    apk add --update unzip; \
-    unzip fakeSMTP-latest.zip; \
-    rm fakeSMTP-latest.zip; \
-    mv /tmp/fakeSMTP*.jar /opt/fakeSMTP.jar
-
+FROM maven:3-jdk-8-slim as builder
+RUN apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --assume-yes git
+WORKDIR /build/
+RUN git clone https://github.com/Nilhcem/FakeSMTP.git --branch=v2.0 .
+RUN mvn package -DskipTests
+    
 FROM openjdk:8-jre-alpine
-COPY --from=download /opt/fakeSMTP.jar /opt/fakeSMTP.jar
-
+COPY --from=builder /build/target/fakeSMTP-2.0.jar /opt/fakeSMTP.jar
 EXPOSE 25
 WORKDIR /opt
 VOLUME ["/var/mail"]
